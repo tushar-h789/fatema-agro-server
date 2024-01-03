@@ -33,13 +33,53 @@ async function run() {
     await client.connect();
 
     //collections
+    const userCollection = client.db("fatema-agro").collection("users");
     const productCollection = client.db("fatema-agro").collection("products");
     const cartCollection = client.db("fatema-agro").collection("carts");
 
+    //products related api
     app.get("/products", async (req, res) => {
       const result = await productCollection.find().toArray();
       res.send(result);
     });
+
+    //users related api
+    app.get('/users', async(req, res)=>{
+      const result = await userCollection.find().toArray()
+      res.send(result)
+    })
+
+    app.post('/users', async(req, res)=>{
+      const user = req.body;
+      //insert email if user dose not exists:
+      const query = {email: user.email}
+      const existingUser = await userCollection.findOne(query)
+      if(existingUser){
+        return res.send({message: 'user already exists', insertedId: null})
+      }
+      const result = await userCollection.insertOne(user)
+      res.send(result)
+    })
+
+    app.patch('/users/admin/:id', async(req, res)=>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)}
+      const updateDoc ={
+        $set: {
+          role: 'admin'
+        }
+      }
+      const result = await userCollection.updateOne(filter, updateDoc)
+      res.send(result)
+
+    })
+
+    app.delete('/users/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await userCollection.deleteOne(query)
+      res.send(result)
+    })
 
     //carts collection
     app.get("/carts", async (req, res) => {
