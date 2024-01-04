@@ -38,6 +38,7 @@ async function run() {
     const productCollection = client.db("fatema-agro").collection("products");
     const cartCollection = client.db("fatema-agro").collection("carts");
     const orderCollection = client.db("fatema-agro").collection("orders");
+    const contactCollection = client.db("fatema-agro").collection("contacts");
 
     //jwt related api
     app.post("/jwt", async (req, res) => {
@@ -165,7 +166,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/carts/:id", verifyToken, verifyAdmin, async (req, res) => {
+    app.delete("/carts/:id",  async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
@@ -176,6 +177,13 @@ async function run() {
     app.post('/orderConfirm', async(req, res)=>{
       const order = req.body;
       const result = await orderCollection.insertOne(order)
+      res.send(result)
+    })
+
+    //contact api
+    app.post('/contact', async(req, res)=>{
+      const contact = req.body;
+      const result = await contactCollection.insertOne(contact)
       res.send(result)
     })
 
