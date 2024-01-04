@@ -74,6 +74,7 @@ async function run() {
       if (!isAdmin) {
         return res.status(403).send({ message: "forbidden access" });
       }
+      next();
     };
 
     //users related api
@@ -144,6 +145,40 @@ async function run() {
       res.send(result);
     });
 
+    app.patch('/products/:id', async(req, res)=>{
+      const item = req.body;
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)}
+      const updatedDoc ={
+        $set:{
+          title: item.title,
+          category: item.category,
+          price: item.price,
+          quantity: item.quantity,
+          rating: item.rating,
+          details: item.details,
+          image: item.image
+        }
+      }
+      const result = await productCollection.updateOne(filter, updatedDoc)
+      res.send(result)
+      
+    })
+
+    app.post("/products", verifyToken, verifyAdmin, async (req, res) => {
+      const product = req.body;
+      const result = await productCollection.insertOne(product);
+      res.send(result);
+    });
+
+    app.delete("/products/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      // console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await productCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // API endpoint to get product details by ID
     app.get("/products/:id", async (req, res) => {
       const id = req.params.id;
@@ -166,7 +201,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/carts/:id",  async (req, res) => {
+    app.delete("/carts/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
@@ -174,20 +209,28 @@ async function run() {
     });
 
     //order confirm api
-    app.post('/orderConfirm', async(req, res)=>{
+    app.get("/orderConfirm", async (req, res) => {
+      const result = await orderCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post("/orderConfirm", async (req, res) => {
       const order = req.body;
-      const result = await orderCollection.insertOne(order)
-      res.send(result)
-    })
+      const result = await orderCollection.insertOne(order);
+      res.send(result);
+    });
 
     //contact api
-    app.post('/contact', async(req, res)=>{
+    app.get("/contact", async (req, res) => {
+      const result = await contactCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post("/contact", async (req, res) => {
       const contact = req.body;
-      const result = await contactCollection.insertOne(contact)
-      res.send(result)
-    })
-
-
+      const result = await contactCollection.insertOne(contact);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
