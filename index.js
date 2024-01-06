@@ -53,7 +53,7 @@ async function run() {
 
     //middlewares
     const verifyToken = (req, res, next) => {
-      console.log("inside verify token", req.headers);
+      console.log("inside verify token", req.headers.authorization);
       if (!req.headers.authorization) {
         return res.status(401).send({ message: "unauthorized access" });
       }
@@ -85,25 +85,20 @@ async function run() {
       res.send(result);
     });
 
-    app.get(
-      "/user/admin/:email",
-      verifyToken,
-      verifyAdmin,
-      async (req, res) => {
-        const email = req.params.email;
-        if (email !== req.decoded.email) {
-          return res.status(403).send({ message: "forbidden access" });
-        }
-
-        const query = { email: email };
-        const user = await userCollection.findOne(query);
-        let admin = false;
-        if (user) {
-          admin = user?.role === "admin";
-        }
-        res.send({ admin });
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
       }
-    );
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let admin = false;
+      if (user) {
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
+    });
 
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -147,7 +142,8 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/products/:id", async (req, res) => {
+    // update products
+    app.patch("/products/:id", verifyToken, verifyAdmin, async (req, res) => {
       const item = req.body;
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -180,39 +176,13 @@ async function run() {
       res.send(result);
     });
 
-    // API endpoint to get product details by ID
+    // product details by ID
     app.get("/products/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await productCollection.findOne(query);
       res.send(result);
     });
-
-    // // products details and comments add start
-    // // Endpoint to get specific product information
-    // app.get("/products/:id", async (req, res) => {
-    //   const productId = req.params.id;
-    //   const query = { _id: new ObjectId(productId) };
-    //   const product = await questionCollection.findOne(query);
-    //   res.send(product);
-    // });
-
-    // // Endpoint to get comments for a specific product
-    // app.get("/products/:id/comments", async (req, res) => {
-    //   const productId = req.params.id;
-    //   const query = { _id: new ObjectId(productId) };
-    //   const comments = await questionCollection.find(query).toArray();
-    //   res.send(comments);
-    // });
-
-    // // Endpoint to add a comment to a specific product
-    // app.post("/products/:id/comments", async (req, res) => {
-    //   const productId = req.params.id;
-    //   const query = { _id: new ObjectId(productId) };
-    //   const result = await questionCollection.insertOne(query);
-    //   res.send(result);
-    // });
-    // // products details and comments add end
 
     //carts collection
     app.get("/carts", async (req, res) => {
@@ -247,6 +217,26 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/orderConfirm/:id", async (req, res) => {
+      const id = req.params.id;
+      // const item = req.body;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          // name: item.name,
+          // email: item.email,
+          // address: item.address,
+          // number: item.number,
+          // quantity: item.quantity,
+          order: "Done",
+        },
+      };
+      const result = await orderCollection.updateOne(filter, updateDoc);
+      console.log(result);
+      res.send(result);
+    });
+
     //contact api
     app.get("/contact", async (req, res) => {
       const result = await contactCollection.find().toArray();
@@ -271,26 +261,32 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/usersQuestion/:id", async (req, res) => {
-      const id = req.params.id;
-      const answer = req.body;
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          question: answer.question,
-          answer: answer.answer,
-        },
-      };
-      const result = await questionCollection.updateOne(filter, updateDoc);
-      res.send(result);
-    });
+    app.patch(
+      "/usersQuestion/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const answer = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            question: answer.question,
+            answer: answer.answer,
+          },
+        };
+        const result = await questionCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      }
+    );
 
     //users Review part start
     app.get("/usersReview", async (req, res) => {
       const result = await reviewCollection.find().toArray();
       res.send(result);
     });
-    app.post("/usersReview", async (req, res) => {
+
+    app.post("/usersReview", verifyToken, verifyAdmin, async (req, res) => {
       const review = req.body;
       const result = await reviewCollection.insertOne(review);
       res.send(result);
