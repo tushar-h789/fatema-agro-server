@@ -39,6 +39,8 @@ async function run() {
     const cartCollection = client.db("fatema-agro").collection("carts");
     const orderCollection = client.db("fatema-agro").collection("orders");
     const contactCollection = client.db("fatema-agro").collection("contacts");
+    const questionCollection = client.db("fatema-agro").collection("questions");
+    const reviewCollection = client.db("fatema-agro").collection("reviews");
 
     //jwt related api
     app.post("/jwt", async (req, res) => {
@@ -145,25 +147,24 @@ async function run() {
       res.send(result);
     });
 
-    app.patch('/products/:id', async(req, res)=>{
+    app.patch("/products/:id", async (req, res) => {
       const item = req.body;
       const id = req.params.id;
-      const filter = {_id: new ObjectId(id)}
-      const updatedDoc ={
-        $set:{
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
           title: item.title,
           category: item.category,
           price: item.price,
           quantity: item.quantity,
           rating: item.rating,
           details: item.details,
-          image: item.image
-        }
-      }
-      const result = await productCollection.updateOne(filter, updatedDoc)
-      res.send(result)
-      
-    })
+          image: item.image,
+        },
+      };
+      const result = await productCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
     app.post("/products", verifyToken, verifyAdmin, async (req, res) => {
       const product = req.body;
@@ -186,6 +187,32 @@ async function run() {
       const result = await productCollection.findOne(query);
       res.send(result);
     });
+
+    // // products details and comments add start
+    // // Endpoint to get specific product information
+    // app.get("/products/:id", async (req, res) => {
+    //   const productId = req.params.id;
+    //   const query = { _id: new ObjectId(productId) };
+    //   const product = await questionCollection.findOne(query);
+    //   res.send(product);
+    // });
+
+    // // Endpoint to get comments for a specific product
+    // app.get("/products/:id/comments", async (req, res) => {
+    //   const productId = req.params.id;
+    //   const query = { _id: new ObjectId(productId) };
+    //   const comments = await questionCollection.find(query).toArray();
+    //   res.send(comments);
+    // });
+
+    // // Endpoint to add a comment to a specific product
+    // app.post("/products/:id/comments", async (req, res) => {
+    //   const productId = req.params.id;
+    //   const query = { _id: new ObjectId(productId) };
+    //   const result = await questionCollection.insertOne(query);
+    //   res.send(result);
+    // });
+    // // products details and comments add end
 
     //carts collection
     app.get("/carts", async (req, res) => {
@@ -231,6 +258,44 @@ async function run() {
       const result = await contactCollection.insertOne(contact);
       res.send(result);
     });
+
+    // product related user ask question
+    app.get("/usersQuestion", async (req, res) => {
+      const result = await questionCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post("/usersQuestion", async (req, res) => {
+      const question = req.body;
+      const result = await questionCollection.insertOne(question);
+      res.send(result);
+    });
+
+    app.patch("/usersQuestion/:id", async (req, res) => {
+      const id = req.params.id;
+      const answer = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          question: answer.question,
+          answer: answer.answer,
+        },
+      };
+      const result = await questionCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    //users Review part start
+    app.get("/usersReview", async (req, res) => {
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+    });
+    app.post("/usersReview", async (req, res) => {
+      const review = req.body;
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
+    });
+    //users Review part end
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
